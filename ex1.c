@@ -154,7 +154,6 @@ int main(int argc, char **argv) {
     for (int r = 0; r < 5; r++) {
         Node *curr = head;
         while (curr!=NULL) {
-            printf("%s!\n",curr->data.position);
             if (strcmp(curr->data.position, rank[r])==0) {
                 
                 fprintf(out, "First Name: %s\nSecond Name: %s\nFingerprint: %s\nPosition: %s\n\n",

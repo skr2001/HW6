@@ -1,0 +1,1 @@
+the polynomial output for a=0.244628, b=0.292968, c=2.200195 is 2.186523
