@@ -4,6 +4,19 @@
 #include <ctype.h>
 #include "org_tree.h"
 
+// Functions
+void safe_string_copy(char *dest, const char *src, size_t dest_size);
+void parse_and_store(char *dest, const char *line, size_t dest_size);
+Node* create_node();
+void append_support(Node *hand_node, Node *new_support);
+Org build_org_from_clean_file(const char *path);
+void print_node(const Node *node);
+void print_tree_order(const Org *org);
+void free_list(Node *head);
+void free_org(Org *org);
+
+
+
 /*
  * Manually copies a string from src to dest.
  */
@@ -109,20 +122,20 @@ Org build_org_from_clean_file(const char *path) {
         Node *node = create_node();
         if (!node) break;
 
-        // 1. Parse First Name
+        //Parse First Name
         parse_and_store(node->first, line, MAX_FIELD);
 
-        // 2. Read & Parse Second Name
+        //Read & Parse Second Name
         if (fgets(line, sizeof(line), fp)) {
             parse_and_store(node->second, line, MAX_FIELD);
         }
 
-        // 3. Read & Parse Fingerprint
+        //Read & Parse Fingerprint
         if (fgets(line, sizeof(line), fp)) {
             parse_and_store(node->fingerprint, line, MAX_FIELD);
         }
 
-        // 4. Read & Parse Position
+        //Read & Parse Position
         if (fgets(line, sizeof(line), fp)) {
             parse_and_store(node->position, line, MAX_POS);
         }
