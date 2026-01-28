@@ -11,6 +11,20 @@
 // Functions
 int check_candidate(Node *node, int *cipher_vals, int mask, int is_xor);
 Node* search_org(Org *org, int *cipher_vals, int mask, int is_xor);
+static void print_success(int mask, char *op, char* fingerprint, char* First_Name, char* Second_Name);
+static void print_unsuccess();
+
+
+static void print_success(int mask, char *op, char* fingerprint, char* First_Name, char* Second_Name)
+{
+    printf("Successful Decrypt! The Mask used was mask_%d of type (%s) and The fingerprint was %.*s belonging to %s %s\n",
+                       mask, op, FP_LEN, fingerprint, First_Name, Second_Name);
+}
+
+static void print_unsuccess()
+{
+    printf("Unsuccesful decrypt, Looks like he got away\n");
+}
 
 /*
  * Verifies if a specific node's fingerprint matches the encrypted data
@@ -141,8 +155,7 @@ int main(int argc, char **argv) {
         // Test XOR Operation
         Node *match = search_org(&org, cipher_vals, m, 1);
         if (match) {
-            printf("Successful Decrypt! The Mask used was mask_%d of type (XOR) and The fingerprint was %s belonging to %s %s\n", 
-                   m, match->fingerprint, match->first, match->second);
+            print_success(m, "XOR", match->fingerprint, match->first, match->second);
             found = 1;
             break;
         }
@@ -150,8 +163,7 @@ int main(int argc, char **argv) {
         // Test AND Operation
         match = search_org(&org, cipher_vals, m, 0);
         if (match) {
-            printf("Successful Decrypt! The Mask used was mask_%d of type (AND) and The fingerprint was %s belonging to %s %s\n", 
-                   m, match->fingerprint, match->first, match->second);
+            print_success(m, "AND", match->fingerprint, match->first, match->second);
             found = 1;
             break;
         }
@@ -159,7 +171,7 @@ int main(int argc, char **argv) {
 
     // If loop finishes without setting found flag
     if (!found) {
-        printf("Unsuccesful decrypt, Looks like he got away\n");
+        print_unsuccess();
     }
 
     // Clean up memory
