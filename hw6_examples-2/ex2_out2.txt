@@ -1,1 +1,0 @@
-Successful Decrypt! The Mask used was mask_54 of type (AND) and The fingerprint was Q8fMZL4R2 belonging to Taylor Brooks

@@ -1,1 +1,0 @@
-Successful Decrypt! The Mask used was mask_60 of type (XOR) and The fingerprint was X9AqP7L2M belonging to Alex Morgan
