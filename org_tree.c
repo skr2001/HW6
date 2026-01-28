@@ -4,32 +4,62 @@
 #include <ctype.h>
 #include "org_tree.h"
 
-void strip_newline(char *str) {
-    str[strcspn(str, "\r\n")] = 0;
-}
-
-void parse_field(char *dest, const char *line) {
-    const char *colon = strchr(line, ':');
-    if (colon && *(colon + 1) == ' ') {
-        strcpy(dest, colon + 2);
-    } else if (colon) {
-        strcpy(dest, colon + 1);
-    } else {
-        strcpy(dest, "");
+/*
+ * Manually copies a string from src to dest.
+ */
+void safe_string_copy(char *dest, const char *src, size_t dest_size) {
+    size_t i;
+    for (i = 0; i < dest_size - 1 && src[i] != '\0'; i++) {
+        // Stop copying if we hit a newline
+        if (src[i] == '\r' || src[i] == '\n') {
+            break;
+        }
+        dest[i] = src[i];
     }
-    strip_newline(dest);
+    // Always null-terminate
+    dest[i] = '\0';
 }
 
+/*
+ * Helper to extract value from "Label: Value".
+ */
+void parse_and_store(char *dest, const char *line, size_t dest_size) {
+    const char *colon = strchr(line, ':');
+    if (colon) {
+        const char *val_start = colon + 1;
+        // Skip leading space
+        if (*val_start == ' ') {
+            val_start++;
+        }
+        safe_string_copy(dest, val_start, dest_size);
+    } else {
+        // Empty string if parsing fails
+        dest[0] = '\0';
+    }
+}
+
+/*
+ * Allocates a node and zeroes out memory.
+ */
 Node* create_node() {
     Node *new_node = (Node *)malloc(sizeof(Node));
     if (!new_node) {
         printf("Memory allocation failed\n");
         return NULL; 
     }
-    new_node->first[0] = '\0';
-    new_node->second[0] = '\0';
-    new_node->fingerprint[0] = '\0';
-    new_node->position[0] = '\0';
+
+    // Manually zero out the character arrays
+    // This replaces memset(new_node->first, 0, MAX_FIELD);
+    int i;
+    for (i = 0; i < MAX_FIELD; i++) {
+        new_node->first[i] = '\0';
+        new_node->second[i] = '\0';
+        new_node->fingerprint[i] = '\0';
+    }
+    
+    for (i = 0; i < MAX_POS; i++) {
+        new_node->position[i] = '\0';
+    }
 
     new_node->left = NULL;
     new_node->right = NULL;
@@ -39,7 +69,12 @@ Node* create_node() {
     return new_node;
 }
 
+/*
+ * Appends a node to the end of a support linked list.
+ */
 void append_support(Node *hand_node, Node *new_support) {
+    if (!hand_node || !new_support) return;
+
     if (hand_node->supports_head == NULL) {
         hand_node->supports_head = new_support;
     } else {
@@ -51,6 +86,9 @@ void append_support(Node *hand_node, Node *new_support) {
     }
 }
 
+/*
+ * Reads the clean file using a fixed 128-byte buffer.
+ */
 Org build_org_from_clean_file(const char *path) {
     Org org = {NULL, NULL, NULL};
     FILE *fp = fopen(path, "r");
@@ -60,24 +98,36 @@ Org build_org_from_clean_file(const char *path) {
         return org; 
     }
 
-    char line[256];
-    
+    char line[MAX_FIELD]; // Fixed size 128
+
     while (fgets(line, sizeof(line), fp)) {
-        if (strcmp(line, "\n") == 0 || strcmp(line, "\r\n") == 0) {
+        // Check if line starts with "First Name:"
+        if (strstr(line, "First Name:") != line) {
             continue;
         }
 
         Node *node = create_node();
         if (!node) break;
 
-        parse_field(node->first, line);
+        // 1. Parse First Name
+        parse_and_store(node->first, line, MAX_FIELD);
 
-        if (fgets(line, sizeof(line), fp)) parse_field(node->second, line);
+        // 2. Read & Parse Second Name
+        if (fgets(line, sizeof(line), fp)) {
+            parse_and_store(node->second, line, MAX_FIELD);
+        }
 
-        if (fgets(line, sizeof(line), fp)) parse_field(node->fingerprint, line);
+        // 3. Read & Parse Fingerprint
+        if (fgets(line, sizeof(line), fp)) {
+            parse_and_store(node->fingerprint, line, MAX_FIELD);
+        }
 
-        if (fgets(line, sizeof(line), fp)) parse_field(node->position, line);
+        // 4. Read & Parse Position
+        if (fgets(line, sizeof(line), fp)) {
+            parse_and_store(node->position, line, MAX_POS);
+        }
 
+        // Link logic
         if (strcmp(node->position, "Boss") == 0) {
             org.boss = node;
         } 
@@ -93,7 +143,7 @@ Org build_org_from_clean_file(const char *path) {
             if (org.right_hand) {
                 append_support(org.right_hand, node);
             } else {
-                free(node); 
+                free(node);
             }
         } 
         else if (strcmp(node->position, "Support_Left") == 0) {
@@ -102,6 +152,8 @@ Org build_org_from_clean_file(const char *path) {
             } else {
                 free(node);
             }
+        } else {
+            free(node); // Unknown position
         }
     }
 
@@ -109,6 +161,9 @@ Org build_org_from_clean_file(const char *path) {
     return org;
 }
 
+/*
+ * Prints a single node's data.
+ */
 void print_node(const Node *node) {
     if (!node) return;
     printf("First Name: %s\n", node->first);
@@ -117,6 +172,9 @@ void print_node(const Node *node) {
     printf("Position: %s\n\n", node->position);
 }
 
+/*
+ * Prints: Boss -> Left Hand -> Left Supports -> Right Hand -> Right Supports
+ */
 void print_tree_order(const Org *org) {
     if (!org || !org->boss) return;
 
@@ -143,6 +201,9 @@ void print_tree_order(const Org *org) {
     }
 }
 
+/*
+ * Frees a linked list.
+ */
 void free_list(Node *head) {
     Node *curr = head;
     while (curr) {
@@ -152,6 +213,9 @@ void free_list(Node *head) {
     }
 }
 
+/*
+ * Frees the entire tree structure.
+ */
 void free_org(Org *org) {
     if (!org) return;
 
