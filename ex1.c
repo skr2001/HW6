@@ -39,10 +39,19 @@ void free_list(Node *head);
  */
 char *duplicate_string_segment(const char *src, size_t n) {
     char *dest = malloc(n + 1);
-    if (dest) {
-        strncpy(dest, src, n);
-        dest[n] = '\0';
+    if (dest == NULL) {
+        return NULL;
     }
+
+    size_t i;
+    // Copy characters until we reach 'n' OR the end of the source string
+    for (i = 0; i < n && src[i] != '\0'; i++) {
+        dest[i] = src[i];
+    }
+    
+    // Explicitly null-terminate the new string
+    dest[i] = '\0';
+
     return dest;
 }
 
